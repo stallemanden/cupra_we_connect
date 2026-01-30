@@ -27,7 +27,51 @@ _LOGGER = logging.getLogger(__name__)
 
 # We shouldn't need to do this check. weconnect_cupra-python abstracts it away
 # SUPPORTED_VEHICLES = ["ID.3", "ID.4", "ID.5"]
+# --- Hotfix: handle Cupra API returning chargeRate_kmph as null/None when not charging ---
+# If chargeRate_kmph is None, the upstream library can throw: TypeError: float() argument must be a string or a real number, not 'NoneType'
+# This patch coerces None -> 0.0 to prevent the integration from crashing during setup/reload.
+def _patch_weconnect_cupra_chargerate_none() -> None:
+    try:
+        from weconnect_cupra.api.cupra.elements import charging_status as _cs
+    except Exception:  # pragma: no cover
+        return
 
+    orig_update = getattr(_cs.ChargingStatus, "update", None)
+    if orig_update is None:
+        return
+
+    # Avoid double-patching
+    if getattr(orig_update, "__cupra_none_patch__", False):
+        return
+
+    def patched_update(self, fromDict=None, *args, **kwargs):
+        try:
+            return orig_update(self, fromDict, *args, **kwargs)
+        except TypeError as e:
+            # Only handle the known null chargeRate_kmph case
+            try:
+                val = None
+                if isinstance(fromDict, dict):
+                    value = fromDict.get("value")
+                    if isinstance(value, dict):
+                        val = value.get("chargeRate_kmph")
+                if val is None and "float() argument" in str(e):
+                    # Re-run with a sanitised dict
+                    if isinstance(fromDict, dict):
+                        fd = dict(fromDict)
+                        value = dict(fd.get("value") or {})
+                        value["chargeRate_kmph"] = 0
+                        fd["value"] = value
+                        return orig_update(self, fd, *args, **kwargs)
+            except Exception:
+                pass
+            raise
+
+    patched_update.__cupra_none_patch__ = True
+    _cs.ChargingStatus.update = patched_update
+
+_patch_weconnect_cupra_chargerate_none()
+# --- End hotfix ---
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Volkswagen We Connect ID from a config entry."""

@@ -1,7 +1,7 @@
 {
   "domain": "cupra_we_connect",
-  "name": "Cupra WeConnect",
-  "codeowners": ["@daernsinstantfortress"],
+  "name": "Cupra WeConnect Hotfix",
+  "codeowners": ["@daernsinstantfortress", "@stallemanden"],
   "config_flow": true,
   "dependencies": [],
   "documentation": "https://github.com/daernsinstantfortress/cupra_we_connect",

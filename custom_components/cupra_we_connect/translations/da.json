@@ -1,0 +1,21 @@
+{
+    "config": {
+        "abort": {
+            "already_configured": "Bilen er allerede konfigureret"
+        },
+        "error": {
+            "cannot_connect": "Kunne ikke forbinde",
+            "invalid_auth": "Forkert login",
+            "unknown": "Uventet Fejl"
+        },
+        "step": {
+            "user": {
+                "data": {
+                    "host": "Host",
+                    "password": "Adgangskode",
+                    "username": "Brugernavn"
+                }
+            }
+        }
+    }
+}
